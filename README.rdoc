@@ -20,21 +20,21 @@ Ruby this as <tt>ruby myapp.rb</tt> and view at <tt>http://localhost:4567</tt>
   get '/' do
     .. show things ..
   end
-  
+
   post '/' do
     .. create something ..
   end
-  
+
   put '/' do
     .. update something ..
   end
-  
+
   delete '/' do
     .. annihilate something ..
   end
-  
+
   head '/' do
-  
+
   end
 
 NOTE:  <tt>put</tt> and <tt>delete</tt> are triggered when a <tt>_method</tt> param is set to PUT or DELETE and the HTTP_REQUEST_METHOD is a POST
@@ -48,13 +48,23 @@ Simple
   get '/hi' do
     ...
   end
-  
+
 With params
 
   get '/:name' do
     # matches /sinatra and the like and sets params[:name]
   end
-  
+
+With params and specified regex patterns for some params
+
+  get '/edit/:page', {:param_regex => {:page => '.+'}} do
+    # matches /edit/foo/bar sets page to foo/bar
+  end
+
+  get '/edit/:page/:rev', {:param_regex => {:page => '.+', :rev => '[a-f0-9]{8}}} do
+    # matches /edit/foo/bar/ab345678 sets page to foo/bar, and :rev to ab345678
+  end
+
 Splat'n
 
   get '/say/*/to/*' do
@@ -66,9 +76,9 @@ Splat'n
     # matches /download/path/to/file.xml
     params["splat"] # => ["path/to/file", "xml"]
   end
-  
+
 Get an agent!
-  
+
   get '/foo', :agent => /Songbird (\d\.\d)[\d\/]*?/ do
     "You're using Songbird version #{params[:agent][0]}"
   end
@@ -83,7 +93,7 @@ Put all of your static content in the ./public directory
 
   root
     \ public
-    
+
 If a file exists that maps to the REQUEST_PATH then it is served and the request end; Sinatra will look for and event that matches the path otherwise
 
 = Views (if you need MVC)
@@ -92,16 +102,16 @@ All file-based views are looked up in:
 
   root
     | - views/
-    
+
 
 == Templates
-  
+
 === Haml
 
   get '/' do
     haml :index
   end
-  
+
 This will render <tt>./views/index.haml</tt>
 
 === Sass
@@ -109,7 +119,7 @@ This will render <tt>./views/index.haml</tt>
     content_type 'text/css', :charset => 'utf-8'
     sass :stylesheet
   end
-  
+
 This will render <tt>./views/stylesheet.sass</tt>
 
 === Inline
@@ -117,7 +127,7 @@ This will render <tt>./views/stylesheet.sass</tt>
   get '/' do
     haml '%div.title Hello World'
   end
-  
+
 This will render the inlined template string
 
 === Accessing Variables
@@ -135,7 +145,7 @@ Send local objects like:
     localvar = Foo.find(params[:id])
     haml '%h1== localvar.name', :locals => { :localvar => localvar }
   end
-  
+
 This is more ideal for rendering templates as partials from within templates
 
 == In file templates
@@ -145,19 +155,19 @@ This one is cool:
   get '/' do
     haml :index
   end
-  
+
   use_in_file_templates!
-  
+
   __END__
-  
+
   @@ layout
   X
   = yield
   X
-  
+
   @@ index
   %div.title Hello world!!!!!
-  
+
 Try it!
 
 = You can do this too but it's not as cool
@@ -193,13 +203,13 @@ It is ill-advised to create helpers on (main).  Use the handy <tt>helpers</tt> t
 Example:
 
   helpers do
-    
+
     def bar(name)
       "#{name}bar"
     end
-    
+
   end
-  
+
   get '/:name' do
     bar(params[:name])
   end
@@ -211,31 +221,31 @@ These are run in Sinatra::EventContext
   before do
     .. this code will run before each event ..
   end
-  
+
 = Halt!
 
 To immediately stop a request during a before filter or event use:
-  
+
   throw :halt
-  
+
 === Variations
 
 Set the body to the result of a helper method
 
   throw :halt, :helper_method
-  
+
 Set the body to the result of a helper method after sending it parameters from the local scope
-  
+
   throw :halt, [:helper_method, foo, bar]
-    
+
 Set the body to a simple string
 
   throw :halt, 'this will be the body'
-  
+
 Set status then the body
 
   throw :halt, [401, 'go away!']
-  
+
 Set the status then call a helper method with params from local scope
 
   throw :halt, [401, [:helper_method, foo, bar]]
@@ -251,7 +261,7 @@ Create you own to_result
       event_context.body = 'This will be the body!
     end
   end
-  
+
   get '/' do
     throw :halt, MyResultObject.new
   end
@@ -265,21 +275,21 @@ Sinatra supports multiple environments and re-loading.  Re-loading happens on ev
 All environments:
 
   configure do
-  
+
   end
-  
+
 Production
 
   configure :production do
-  
+
   end
-  
+
 Two at a time:
 
   configure :production, :test do
-  
+
   end
-  
+
 This is also really nifty for error handling.
 
 = Error handling
@@ -293,7 +303,7 @@ Whenever NotFound is raised this will be called
   not_found do
     'This is nowhere to be found'
   end
-  
+
 === Error
 
 By default +error+ will catch Sinatra::ServerError
@@ -319,7 +329,7 @@ then if this happens:
 you gets this:
 
   So what happened was... something bad
-  
+
 one guess what this does ;)
 
   not_found do
@@ -328,7 +338,7 @@ one guess what this does ;)
 
 Try it!
 
-  
+
 Because Sinatra give you a default <tt>not_found</tt> and <tt>error</tt> do :production that are secure.  If you want to customize only for :production but want to keep the friendly helper screens for :development then do this:
 
   configure :production do
@@ -336,13 +346,13 @@ Because Sinatra give you a default <tt>not_found</tt> and <tt>error</tt> do :pro
     not_found do
       "We're so sorry, but we don't what this is"
     end
-    
+
     error do
       "Something really nasty happened.  We're on it!"
     end
-  
+
   end
-  
+
 = Mime types
 
 When using send_file or static files you may have mime types Sinatra doesn't understand.  Use +mime+ in those cases.
@@ -380,7 +390,7 @@ Rack is distributed with a variety of standard middleware for logging, debugging
   get_it path, params
   get_it path, params.merge(:env => { 'HTTP_HOST' => 'www.sinatrarb.com' }) or
   get_it path, params.merge(:env => { :host => 'www.sinatrarb.com' })
-  
+
 RESTful:
 
   post_it '/foo', '<myxml></myxml>', 'HTTP_ACCEPT' => 'application/xml'
@@ -393,39 +403,39 @@ also works with:
 
   require 'my_sinatra_app'
   require 'sinatra/test/unit'
-  
+
   class MyAppTest < Test::Unit::TestCase
-    
+
     def test_my_default
       get_it '/'
       assert_equal 'My Default Page!', @response.body
     end
-    
+
     def test_with_agent
       get_it '/', :agent => 'Songbird'
       assert_equal 'You're in Songbird!', @response.body
     end
-    
+
     ...
-    
+
   end
-  
+
 === Test/Spec
 
   require 'my_sinatra_app'
   require 'sinatra/test/spec'
 
   context 'My app'
-  
+
     should "show a default page" do
       get_it '/'
       should.be.ok
       body.should.equal 'My Default Page!'
     end
     ...
-  
+
   end
-  
+
 == Test helpers
 
 See Sinatra::Test::Methods
@@ -437,7 +447,7 @@ This will be back in soon
 = Command line
 
 Run your sinatra file like:
-  
+
   ruby myapp.rb [options]
 
 Options are:

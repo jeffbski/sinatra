@@ -13,7 +13,7 @@ if ENV['SWIFT']
  require 'swiftcore/swiftiplied_mongrel'
  puts "Using Swiftiplied Mongrel"
 elsif ENV['EVENT']
-  require 'swiftcore/evented_mongrel' 
+  require 'swiftcore/evented_mongrel'
   puts "Using Evented Mongrel"
 end
 
@@ -31,7 +31,7 @@ class Class
 end
 
 module Rack #:nodoc:
-  
+
   class Request #:nodoc:
 
     # Set of request method names allowed via the _method parameter hack. By default,
@@ -59,8 +59,8 @@ module Rack #:nodoc:
 
       # Return truthfully if and only if the following conditions are met: 1.) the
       # *actual* request method is POST, 2.) the request content-type is one of
-      # 'application/x-www-form-urlencoded' or 'multipart/form-data', 3.) there is a 
-      # "_method" parameter in the POST body (not in the query string), and 4.) the 
+      # 'application/x-www-form-urlencoded' or 'multipart/form-data', 3.) there is a
+      # "_method" parameter in the POST body (not in the query string), and 4.) the
       # method parameter is one of the verbs listed in the POST_TUNNEL_METHODS_ALLOWED
       # list.
       def post_tunnel_method_hack?
@@ -69,7 +69,7 @@ module Rack #:nodoc:
       end
 
   end
-  
+
   module Utils
     extend self
   end
@@ -112,7 +112,7 @@ module Sinatra
   def host
     application.options.host
   end
-  
+
   def env
     application.options.env
   end
@@ -126,13 +126,13 @@ module Sinatra
     # Convert the server into the actual handler name
     handler = options.server.capitalize
 
-    # If the convenience conversion didn't get us anything, 
+    # If the convenience conversion didn't get us anything,
     # fall back to what the user actually set.
     handler = options.server unless Rack::Handler.const_defined?(handler)
 
     @server ||= eval("Rack::Handler::#{handler}")
   end
-  
+
   def run
     begin
       puts "== Sinatra has taken the stage on port #{port} for #{env} with backup by #{server.name}"
@@ -154,12 +154,13 @@ module Sinatra
     PARAM = /(:(#{URI_CHAR}+)|\*)/.freeze unless defined?(PARAM)
     SPLAT = /(.*?)/
     attr_reader :path, :block, :param_keys, :pattern, :options
-    
+
     def initialize(path, options = {}, &b)
       @path = URI.encode(path)
       @block = b
       @param_keys = []
       @options = options
+      param_regex = @options[:param_regex]
       splats = 0
       regex = @path.to_s.gsub(PARAM) do |match|
         if match == "*"
@@ -168,20 +169,25 @@ module Sinatra
           SPLAT.to_s
         else
           @param_keys << $2
-          "(#{URI_CHAR}+)"
+          regex_str = (param_regex) ? param_regex[$2.to_sym] : nil
+          if regex_str # we have an override regex to use
+            "(#{regex_str})"
+          else # use the default regex
+            "(#{URI_CHAR}+)"
+          end
         end
       end
 
       @pattern = /^#{regex}$/
     end
-        
+
     def invoke(request)
       params = {}
-      if agent = options[:agent] 
+      if agent = options[:agent]
         return unless request.user_agent =~ agent
         params[:agent] = $~[1..-1]
       end
-      if host = options[:host] 
+      if host = options[:host]
         return unless host === request.host
       end
       return unless pattern =~ request.path_info.squeeze('/')
@@ -193,65 +199,65 @@ module Sinatra
       end
       Result.new(block, params, 200)
     end
-    
+
   end
-  
+
   class Error
-    
+
     attr_reader :code, :block
-    
+
     def initialize(code, &b)
       @code, @block = code, b
     end
-    
+
     def invoke(request)
       Result.new(block, {}, 404)
     end
-    
+
   end
-  
+
   class Static
-            
+
     def invoke(request)
       return unless File.file?(
         Sinatra.application.options.public + request.path_info.http_unescape
       )
       Result.new(block, {}, 200)
     end
-    
+
     def block
       Proc.new do
         send_file Sinatra.application.options.public + request.path_info.http_unescape,
           :disposition => nil
       end
     end
-    
+
   end
-  
+
   # Adapted from actionpack
   # Methods for sending files and streams to the browser instead of rendering.
   module Streaming
     DEFAULT_SEND_FILE_OPTIONS = {
       :type         => 'application/octet-stream'.freeze,
       :disposition  => 'attachment'.freeze,
-      :stream       => true, 
+      :stream       => true,
       :buffer_size  => 4096
     }.freeze
 
     class MissingFile < RuntimeError; end
 
     class FileStreamer
-      
+
       attr_reader :path, :options
-      
+
       def initialize(path, options)
         @path, @options = path, options
       end
-      
+
       def to_result(cx, *args)
         self
       end
-      
+
       def each
         File.open(path, 'rb') do |file|
           while buf = file.read(options[:buffer_size])
@@ -259,7 +265,7 @@ module Sinatra
           end
         end
       end
-      
+
     end
 
     protected
@@ -276,7 +282,7 @@ module Sinatra
       #   Defaults to File.basename(path).
       # * <tt>:type</tt> - specifies an HTTP content type.
       #   Defaults to 'application/octet-stream'.
-      # * <tt>:disposition</tt> - specifies whether the file will be shown inline or downloaded.  
+      # * <tt>:disposition</tt> - specifies whether the file will be shown inline or downloaded.
       #   Valid values are 'inline' and 'attachment' (default). When set to nil, the
       #   Content-Disposition and Content-Transfer-Encoding headers are omitted entirely.
       # * <tt>:stream</tt> - whether to send the file to the user agent as it is read (true)
@@ -338,7 +344,7 @@ module Sinatra
       # * <tt>:filename</tt> - Suggests a filename for the browser to use.
       # * <tt>:type</tt> - specifies an HTTP content type.
       #   Defaults to 'application/octet-stream'.
-      # * <tt>:disposition</tt> - specifies whether the file will be shown inline or downloaded.  
+      # * <tt>:disposition</tt> - specifies whether the file will be shown inline or downloaded.
       #   Valid values are 'inline' and 'attachment' (default).
       # * <tt>:status</tt> - specifies the status code to send with the response. Defaults to '200 OK'.
       # * <tt>:last_modified</tt> - an optional RFC 2616 formatted date value (See Time#httpdate)
@@ -389,10 +395,10 @@ module Sinatra
         end
 
         # Fix a problem with IE 6.0 on opening downloaded files:
-        # If Cache-Control: no-cache is set (which Rails does by default), 
-        # IE removes the file it just downloaded from its cache immediately 
-        # after it displays the "open/save" dialog, which means that if you 
-        # hit "open" the file isn't there anymore when the application that 
+        # If Cache-Control: no-cache is set (which Rails does by default),
+        # IE removes the file it just downloaded from its cache immediately
+        # after it displays the "open/save" dialog, which means that if you
+        # hit "open" the file isn't there anymore when the application that
         # is called for handling the download is run, so let's workaround that
         header('Cache-Control' => 'private') if headers['Cache-Control'] == 'no-cache'
       end
@@ -531,7 +537,7 @@ module Sinatra
       end
       result
     end
-    
+
     def determine_layout(renderer, template, options)
       return if options[:layout] == false
       layout_from_options = options[:layout] || :layout
@@ -539,7 +545,7 @@ module Sinatra
     end
 
     private
-        
+
       def resolve_template(renderer, template, options, scream = true)
         case template
         when String
@@ -556,7 +562,7 @@ module Sinatra
           nil
         end
       end
-      
+
       def read_template_file(renderer, template, options, scream = true)
         path = File.join(
           options[:views_directory] || Sinatra.application.options.views,
@@ -565,36 +571,36 @@ module Sinatra
         unless File.exists?(path)
           raise Errno::ENOENT.new(path) if scream
           nil
-        else  
+        else
           File.read(path)
         end
       end
-      
+
       def templates
         Sinatra.application.templates
       end
-    
+
   end
 
   module Erb
-    
+
     def erb(content, options={})
       require 'erb'
       render(:erb, content, options)
     end
-    
-    private 
-    
+
+    private
+
       def render_erb(content, options = {})
         locals_opt = options.delete(:locals) || {}
 
         locals_code = ""
-        locals_hash = {} 
+        locals_hash = {}
         locals_opt.each do |key, value|
           locals_code << "#{key} = locals_hash[:#{key}]\n"
           locals_hash[:"#{key}"] = value
         end
- 
+
         body = ::ERB.new(content).src
         eval("#{locals_code}#{body}", binding)
       end
@@ -602,19 +608,19 @@ module Sinatra
   end
 
   module Haml
-    
+
     def haml(content, options={})
       require 'haml'
       render(:haml, content, options)
     end
-    
+
     private
-    
+
       def render_haml(content, options = {}, &b)
         haml_options = (options[:options] || {}).merge(Sinatra.options.haml || {})
         ::Haml::Engine.new(content, haml_options).render(options[:scope] || self, options[:locals] || {}, &b)
       end
-        
+
   end
 
   # Generate valid CSS using Sass (part of Haml)
@@ -639,7 +645,7 @@ module Sinatra
   #   end
   #
   # The "views/stylesheet.sass" file might contain the following:
-  #  
+  #
   #  body
   #    #admin
   #      :background-color #CCC
@@ -655,31 +661,31 @@ module Sinatra
   #     background-color: #CCC; }
   #   body #main {
   #     background-color: #000; }
-  #   
+  #
   #   #form {
   #     border-color: #AAA;
   #     border-width: 10px; }
-  #   
+  #
   #
   # NOTE: Haml must be installed or a LoadError will be raised the first time an
   # attempt is made to render a Sass template.
   #
   # See http://haml.hamptoncatlin.com/docs/rdoc/classes/Sass.html for comprehensive documentation on Sass.
 
-  
+
   module Sass
-    
+
     def sass(content, options = {})
       require 'sass'
-      
+
       # Sass doesn't support a layout, so we override any possible layout here
       options[:layout] = false
-      
+
       render(:sass, content, options)
     end
-    
+
     private
-      
+
       def render_sass(content, options = {})
         ::Sass::Engine.new(content).render
       end
@@ -693,13 +699,13 @@ module Sinatra
   #
   # === Inline Rendering
   #
-  # If the builder method is given a block, the block is called directly with an 
+  # If the builder method is given a block, the block is called directly with an
   # +XmlMarkup+ instance and the result is returned as String:
   #   get '/who.xml' do
   #     builder do |xml|
   #       xml.instruct!
   #       xml.person do
-  #         xml.name "Francis Albert Sinatra", 
+  #         xml.name "Francis Albert Sinatra",
   #           :aka => "Frank Sinatra"
   #         xml.email 'frank@capitolrecords.com'
   #       end
@@ -715,7 +721,7 @@ module Sinatra
   #
   # === Builder Template Files
   #
-  # Builder templates can be stored in separate files with a +.builder+ 
+  # Builder templates can be stored in separate files with a +.builder+
   # extension under the view path. An +XmlMarkup+ object named +xml+ is automatically
   # made available to template.
   #
@@ -777,7 +783,7 @@ module Sinatra
   end
 
   class EventContext
-    
+
     include ResponseHelpers
     include Streaming
     include RenderingHelpers
@@ -785,20 +791,20 @@ module Sinatra
     include Haml
     include Builder
     include Sass
-    
+
     attr_accessor :request, :response
-    
+
     dslify_writer :status, :body
-    
+
     def initialize(request, response, route_params)
       @request = request
       @response = response
       @route_params = route_params
       @response.body = nil
     end
-    
+
     def params
-      @params ||= begin 
+      @params ||= begin
         h = Hash.new {|h,k| h[k.to_s] if Symbol === k}
         h.merge(@route_params.merge(@request.params))
       end
@@ -807,25 +813,25 @@ module Sinatra
     def data
       @data ||= params.keys.first
     end
-    
+
     def stop(*args)
       throw :halt, args
     end
-    
+
     def complete(returned)
       @response.body || returned
     end
-    
+
     def session
       request.env['rack.session'] ||= {}
     end
-    
+
     private
 
       def method_missing(name, *args, &b)
         @response.send(name, *args, &b)
       end
-    
+
   end
 
 
@@ -1255,7 +1261,7 @@ module Sinatra
         end
         not_found { '<h1>Not Found</h1>'}
       end
-      
+
       configures :development do
 
         get '/sinatra_custom_images/:image.png' do
@@ -1266,10 +1272,10 @@ module Sinatra
           %Q(
           <style>
           body {
-            text-align: center; 
+            text-align: center;
             color: #888;
-            font-family: Arial; 
-            font-size: 22px; 
+            font-family: Arial;
+            font-size: 22px;
             margin: 20px;
           }
           #content {
@@ -1297,48 +1303,48 @@ end<pre>
           @error = request.env['sinatra.error']
           %Q(
           <html>
-          	<body>
-          		<style type="text/css" media="screen">
-          			body {
-          				font-family: Verdana;
-          				color: #333;
-          			}
+                <body>
+                        <style type="text/css" media="screen">
+                                body {
+                                        font-family: Verdana;
+                                        color: #333;
+                                }
 
-          			#content {
-          				width: 700px;
-          				margin-left: 20px;
-          			}
+                                #content {
+                                        width: 700px;
+                                        margin-left: 20px;
+                                }
 
-          			#content h1 {
-          				width: 99%;
-          				color: #1D6B8D;
-          				font-weight: bold;
-          			}
+                                #content h1 {
+                                        width: 99%;
+                                        color: #1D6B8D;
+                                        font-weight: bold;
+                                }
 
-          			#stacktrace {
-          			  margin-top: -20px;
-          			}
+                                #stacktrace {
+                                  margin-top: -20px;
+                                }
 
-          			#stacktrace pre {
-          				font-size: 12px;
-          				border-left: 2px solid #ddd;
-          				padding-left: 10px;
-          			}
+                                #stacktrace pre {
+                                        font-size: 12px;
+                                        border-left: 2px solid #ddd;
+                                        padding-left: 10px;
+                                }
 
-          			#stacktrace img {
-          				margin-top: 10px;
-          			}
-          		</style>
-          		<div id="content">
-            		<img src="/sinatra_custom_images/500.png" />
-            		<div class="info">
+                                #stacktrace img {
+                                        margin-top: 10px;
+                                }
+                        </style>
+                        <div id="content">
+                        <img src="/sinatra_custom_images/500.png" />
+                        <div class="info">
                   Params: <pre>#{params.inspect}
-            		</div>
-          			<div id="stacktrace">
-          				<h1>#{Rack::Utils.escape_html(@error.class.name + ' - ' + @error.message)}</h1>
-          				<pre><code>#{Rack::Utils.escape_html(@error.backtrace.join("\n"))}</code></pre>
-          		</div>
-          	</body>
+                        </div>
+                                <div id="stacktrace">
+                                        <h1>#{Rack::Utils.escape_html(@error.class.name + ' - ' + @error.message)}</h1>
+                                        <pre><code>#{Rack::Utils.escape_html(@error.backtrace.join("\n"))}</code></pre>
+                        </div>
+                </body>
           </html>
           )
         end
@@ -1405,58 +1411,58 @@ class String
     Rack::Utils.escape(self)
   end
   alias :http_escape :to_param
-  
+
   # Converts +self+ from an escaped URI parameter value
   #   'Foo%20Bar'.from_param # => 'Foo Bar'
   def from_param
     Rack::Utils.unescape(self)
   end
   alias :http_unescape :from_param
-  
+
 end
 
 class Hash
-  
+
   def to_params
     map { |k,v| "#{k}=#{URI.escape(v)}" }.join('&')
   end
-  
+
   def symbolize_keys
     self.inject({}) { |h,(k,v)| h[k.to_sym] = v; h }
   end
-  
+
   def pass(*keys)
     reject { |k,v| !keys.include?(k) }
   end
-  
+
 end
 
 class Symbol
-  
-  def to_proc 
+
+  def to_proc
     Proc.new { |*args| args.shift.__send__(self, *args) }
   end
-  
+
 end
 
 class Array
-  
+
   def to_hash
     self.inject({}) { |h, (k, v)|  h[k] = v; h }
   end
-  
+
   def to_proc
     Proc.new { |*args| args.shift.__send__(self[0], *(args + self[1..-1])) }
   end
-  
+
 end
 
 module Enumerable
-  
+
   def eject(&block)
     find { |e| result = block[e] and break result }
   end
-  
+
 end
 
 ### Core Extension results for throw :halt
@@ -1503,7 +1509,7 @@ end
 at_exit do
   raise $! if $!
   if Sinatra.application.options.run
-    Sinatra.run 
+    Sinatra.run
   end
 end
 
